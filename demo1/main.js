@@ -10,8 +10,10 @@ let app = express();
 let server = require('http').createServer(app);
 let WsServer = require('ws').Server;
 let ptModule = require('node-person');
-var childProcess = require('child_process');
-var colors = require('colors');
+let childProcess = require('child_process');
+let colors = require('colors');
+let updateResource = require('../client').updateResource;
+let getResource = require('../client').getResource;
 
 let ptConfig = {tracking: {enable: true, trackingMode: 'following'}};
 let cameraConfig = {color: {width: 320, height: 240, frameRate: 30, isEnabled: true},
@@ -24,95 +26,106 @@ let led3LastChangeTime;
 let led4LastChangeTime;
 
 function initialLED() {
-  childProcess.execFile('./test/oic-get', ['/res'], function(err,stdout,stderr){
-    if(err) {
-      console.log('Failed to get led id with error:'+stderr);
-      closeAllLED();
+  getResource().then((data) => {
+    ledList = data;
+    closeAllLED();
+  })
+  .catch((err) => {
+      console.log('Failed to get led id with error:' + err);
       process.exit();
-    } else {
-      stdout = stdout.split('\n')[0];
-      var data = JSON.parse(stdout);
-      data.forEach(function (item){
-        if(item.links[0].href.indexOf('/a/led') > -1){
-          ledList[item.links[0].href] = item.di;  
-        }
-      })
-      closeAllLED();
-    }
   });
 }
 
 function closeAllLED() {
-  updateLedStatus('/a/led', true);
+  updateResource(ledList['/a/rgbled'], [255, 255, 255]);
   setTimeout(() => {
-    updateLedStatus('/a/led', false);
-  }, 2000);
+    updateResource(ledList['/a/rgbled'], [0, 0, 0]);
+  }, 1000);
 }
 
 initialLED();
-let ledFlgOld = false;
+let ledFlgOld = 0;
 function controlLEDbyPersons(persons) {
-  let ledFlg = false;
+  let led1Flg = false;
+  let led2Flg = false;
+  let led3Flg = false;
+  let led4Flg = false;
   persons.forEach((person) => {
     let distance = 0;
     if(person.trackInfo && person.trackInfo.center){
       distance = person.trackInfo.center.worldCoordinate.z;
     }
-    if(distance <= 1.5 && distance > 0.5) {
+    if(distance <= 1 && distance > 0.5) {
       console.log(colors.blue(distance));
-      ledFlg = true;
+      led1Flg = true;
+    }
+    if(distance <= 1.5 && distance > 1) {
+      console.log(colors.red(distance));
+      led2Flg = true;
+    }
+    if(distance <= 2 && distance > 1.5) {
+      console.log(colors.white(distance));
+      led3Flg = true;
+    }
+    if(distance <= 2.5 && distance > 2) {
+      console.log(colors.green(distance));
+      led4Flg = true;
     }
   });
-  if(ledFlgOld !== ledFlg) {
-    if (ledFlg){
-      console.log(('update led with' + ledFlg).blue.bold);
-    } else {
-      console.log(('update led with' + ledFlg).blue.inverse);
-    }
-    updateLedStatus('/a/led', ledFlg); ledFlgOld = ledFlg;
+  if(ledFlgOld != 1 && led1Flg) {
+    console.log(('update LED 1 with ' + led1Flg).blue.bold);
+    updateLedStatus('/a/rgbled', led1Flg, [0, 0, 255]); ledFlgOld = 1;
+  }
+  else if(ledFlgOld !== 2 && led2Flg) {
+    console.log(('update LED 2 with ' + led2Flg).red.bold);
+    updateLedStatus('/a/rgbled', led2Flg, [255, 0, 0]); ledFlgOld = 2;
+  } 
+  else if(ledFlgOld !== 3 && led3Flg) {
+    console.log(('update LED 3 with ' + led3Flg).white.bold);
+    updateLedStatus('/a/rgbled', led3Flg, [255, 255, 255]); ledFlgOld = 3;
+  }
+  else if(ledFlgOld !== 4 && led4Flg) {
+    console.log(('update LED 4 with ' + led4Flg).green.bold);
+    updateLedStatus('/a/rgbled', led4Flg, [0, 255, 0]); ledFlgOld = 4;
+  }
+  else if(!led1Flg && !led2Flg && !led3Flg && !led4Flg &&
+          ledFlgOld != 0){
+    updateLedStatus('/a/rgbled', true, [0, 0, 0]); 
+    ledFlgOld = 0;
   }
 }
 
-function updateLedStatus(url, state) {
-    if(new Date - led1LastChangeTime <= 1000) {
-      return; 
-    }
-    let serverFile;
+function updateLedStatus(lid, state, color) {
+    let lightColor;
     if(state) {
-      serverFile = './test/led-on.json'
-    } else {
-      serverFile = './test/led-off.json'
-    }
-    url = [url, '?di=', ledList[url]].join('');
-    console.log("./test/oic-post "+ url + " " + serverFile);
-    childProcess.execFile('./test/oic-post', [url, serverFile], function(err, stdout, stderr){
-        if(err) {
-            console.log('Failed to update led status with error: '+stderr);
-        } else {
-           // console.log('Turn', state, ['led', ledNum].join(''))
-        }
-    })
+        lightColor = color;
+        console.log('lightColor is: ' + lightColor);
+    } 
+    updateResource(ledList[lid], lightColor);
 }
 
-ptModule.createPersonTracker(ptConfig, cameraConfig).then((instance) => {
-  pt = instance;
-  console.log('Enabling Tracking with mode set to 0');
-  startServer();
-  pt.on('frameprocessed', function(result) {
-    printPersonCount(result);
-    pt.getFrameData().then((frame) => {
-      sendRgbFrame(frame);
+  ptModule.createPersonTracker(ptConfig, cameraConfig).then((instance) => {
+    pt = instance;
+    console.log('Enabling Tracking with mode set to 0');
+    startServer();
+    pt.on('frameprocessed', function(result) {
+      printPersonCount(result);
+      pt.getFrameData().then((frame) => {
+        sendRgbFrame(frame);
+      });
+      sendTrackingData(result);
+      if(result.persons[0]) {
+        let arr = [];
+        arr.push(result.persons[0]);
+        controlLEDbyPersons(arr);
+      }
     });
-    sendTrackingData(result);
-    if(result.persons) {
-      controlLEDbyPersons(result.persons);
-    }
+    setTimeout(() => {
+      return pt.start();
+    }, 10000);
+  }).catch((error) => {
+    console.log('error: ' + error);
   });
-
-  return pt.start();
-}).catch((error) => {
-  console.log('error: ' + error);
-});
 
 console.log('\n-------- Press Esc key to exit --------\n');
 
@@ -145,9 +158,9 @@ function exit() {
     });
   } else {
     closeAllLED();
-      setTimeout(() => {
-        process.exit();
-      }, 2500)
+    setTimeout(() => {
+      process.exit();
+    }, 2500)
   }
 }
 
@@ -344,7 +357,7 @@ function startServer() {
   // Share the ui-browser code from cpp sample
   app.use(express.static('./ui-browser/src'));
   const ip = getEthernetIp();
-  const port = 8002;
+  const port = 8001;
   server.listen(port, ip);
   let wss = new WsServer({
     server: server,
@@ -371,3 +384,4 @@ function startServer() {
     });
   });
 }
+

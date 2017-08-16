@@ -13,6 +13,8 @@ let ptModule = require('node-person');
 let fs = require('fs');
 var childProcess = require('child_process');
 var colors = require('colors');
+let updateResource = require('../client').updateResource;
+let getResource = require('../client').getResource;
 
 let dbPath = './person_recognition_id.db';
 let ptConfig = {
@@ -31,21 +33,13 @@ let prev_result;
 let ledList = {};
 
 function initialLED() {
-  childProcess.execFile('./test/oic-get', ['/res'], function(err,stdout,stderr){
-    if(err) {
-      console.log('Failed to get led id with error:'+stderr);
+  getResource().then((data) => {
+    ledList = data;
+    closeAllLED();
+  })  
+  .catch((err) => {
+      console.log('Failed to get led id with error:' + err);
       process.exit();
-    } else {
-      stdout = stdout.split('\n')[0];
-      var data = JSON.parse(stdout);
-      data.forEach(function (item){
-        if(item.links[0].href.indexOf('/a/led') > -1 ||
-          item.links[0].href.indexOf('/a/buzzer') > -1){
-          ledList[item.links[0].href] = item.di;  
-        }
-      })
-      closeAllLED();
-    }
   });
 }
 initialLED();
@@ -53,30 +47,14 @@ let rgbFlgOld = 'off';
 let buzzerFlgOld = false;
 function closeAllLED() {
   setTimeout(() => {
-    updateLedStatus('/a/led', false);
-    updateLedStatus('/a/buzzer', false);
+    updateResource(ledList['/a/rgbled'], [0, 0, 0]);
+    updateResource(ledList['/a/buzzer'], false);
   }, 2000);
-  updateLedStatus('/a/led', true);
-  updateLedStatus('/a/buzzer', true);
+  updateResource(ledList['/a/rgbled'], [255, 255, 255]);
+  updateResource(ledList['/a/buzzer'], true);
 }
-
-function updateLedStatus(url, state) {
-    let serverFile;
-    if(state && state === true) {
-      serverFile = './test/on.json'
-    } else {
-      serverFile = './test/off.json'
-    }
-    url = [url, '?di=', ledList[url]].join('');
-    console.log("./test/oic-post "+ url + " " + serverFile);
-    childProcess.execFile('./test/oic-post', [url, serverFile], function(err, stdout, stderr){
-      if(err) {
-        console.log('Failed to update led status with error: '+stderr);
-      } else {
-        // console.log('Turn', state, ['led', ledNum].join(''))
-      }
-    })
-}
+let skippingFrame = 30;
+let numFrame = 0;
 ptModule.createPersonTracker(ptConfig, cameraConfig).then((instance) => {
   pt = instance;
   startServer();
@@ -91,8 +69,11 @@ ptModule.createPersonTracker(ptConfig, cameraConfig).then((instance) => {
     }
   });
   pt.on('persontracked', function(result) {
-    prev_result = result;
-    sendTrackingAndRecognitionData(result);
+    numFrame++;
+    if (numFrame % skippingFrame === 0) {
+      prev_result = result;
+      sendTrackingAndRecognitionData(result);
+    }
   });
 
   return pt.start();
@@ -118,22 +99,13 @@ function exit() {
   console.log('\n-------- Stopping --------');
   if (pt) {
     pt.stop().then(() => {
-      closeAllLED();
-      setTimeout(() => {
-        process.exit();
-      }, 2000)
+      process.exit();
     }).catch((error) => {
       console.log('error: ' + error);
-      closeAllLED();
-      setTimeout(() => {
-        process.exit();
-      }, 2000)
+      process.exit();
     });
   } else {
-      closeAllLED();
-      setTimeout(() => {
-        process.exit();
-      }, 2000)
+    process.exit();
   }
 }
 
@@ -220,7 +192,7 @@ function padding(string, width) {
 }
 
 function sendTrackingAndRecognitionData(result) {
-  let rgbFlg = 'off';
+  let rgbFlg = [0, 0, 0];
   let buzzerFlg = false;
   if (!connected) {
     return;
@@ -236,11 +208,10 @@ function sendTrackingAndRecognitionData(result) {
         pt.personRecognition.recognizePerson(trackInfo.id).then((regData) => {
           if(regData.recognized) {
             console.log('Registered person: ', regData.recognitionID);
-            rgbFlg = true;
-            buzzerFlg = false;
+            rgbFlg = [0, 128, 0];
             element = constructAPersonData(person, regData.recognitionID);
           } else {
-            rgbFlg = false;
+            rgbFlg = [255, 0, 0];
             buzzerFlg = true;
             element = constructAPersonData(person, undefined);
           }
@@ -257,21 +228,11 @@ function sendTrackingAndRecognitionData(result) {
   });
 
   Promise.all(promises).then(() => {
-  if(rgbFlgOld !== rgbFlg) {
-    if (rgbFlg){
-      console.log(('update led with' + rgbFlg).blue.bold);
-    } else {
-      console.log(('update led with' + rgbFlg).blue.inverse);
-    }
-    updateLedStatus('/a/led', rgbFlg); rgbFlgOld = rgbFlg;
+  if(JSON.stringify(rgbFlgOld) !== JSON.stringify(rgbFlg)) {
+    updateResource(ledList['/a/rgbled'], rgbFlg); rgbFlgOld = rgbFlg;
   }
-  if(buzzerFlgOld !== buzzerFlg) {
-    if (buzzerFlg){
-      console.log(('update buzzer with' + buzzerFlg).red.bold);
-    } else {
-      console.log(('update buzzer with' + buzzerFlg).red.inverse);
-    }
-    updateLedStatus('/a/buzzer', buzzerFlg); buzzerFlgOld = buzzerFlg;
+  if(JSON.stringify(buzzerFlgOld) !== JSON.stringify(buzzerFlg)) {
+    updateResource(ledList['/a/buzzer'], buzzerFlg); buzzerFlgOld = buzzerFlg;
   } 
     let resultToDisplay = {
       Object_result: resultArray,

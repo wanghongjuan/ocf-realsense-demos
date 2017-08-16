@@ -1,7 +1,7 @@
 # Demo 1
 
 This GUI app displays the live color preview from the camera within a browser and draw red rectangles around the person(s) detected in the camera frame with a color dot indicating the center of mass for the detected persons in the frame. It also displays the Person ID (pid) for every person and the distance from person to camera. Upon the distance, app could control the light turn on/off automatically.
-When people in the 0.5 ~ 1.5 meter from camera, light will turn on, and when people move out 1.5 meter from camera light will turn off.
+When people in the 0.5 ~ 1 meter from camera, light will be on blue, and when people move to 1 ~ 1.5 meter from camera light will be on red.
 
 ## Bootstrap
 
@@ -20,7 +20,7 @@ Person can be recognized and the recognition database can be stored when clickin
 
 ## Screenshot
 
-When person in front of camera at different distance, light turns on/off.
+When person in front of camera at different distance, light* turns on blue color(* means blue, red, white, green).
 
 <img width="600" alt="Image" src="../doc/demo1/demo1_browser_ONE.png">
-<img width="300" alt="Image" src="../doc/demo1/demo1_light.png">
+<img width="300" alt="Image" src="../doc/demo1/demo1_blue_ONE.png">
