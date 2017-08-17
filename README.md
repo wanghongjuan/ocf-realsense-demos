@@ -21,11 +21,6 @@ The following demos are provided in this release.
 - [Grove Buzzer](http://wiki.seeed.cc/Grove-Buzzer/)
 - [Grove Base Shield](https://www.seeedstudio.com/Base-Shield-V2-p-1378.html) (optional)
 
-### Software
-- zephyr.js: master*
-- node-person: v0.10.1
-- iotivity-node: v1.2.1-1
-* Tips: The ZJS OCF API has been extended to support multiple resource registrations with [this commit](https://github.com/01org/zephyr.js/commit/5d1674a724ba202bf966a4b2b66d50f80a0acb78), ZJS version 0.3 and below won't work with the script in folder ocf-server, you should either remain on the master branch or checkout the branch for version 0.4 or above once it’s available.
 
 ### Setup RealSense Execution Environment on Ubuntu
 
@@ -42,7 +37,7 @@ The OCF server communicates with the OCF client or gateway over BLE through 6LoW
 
 5. Execute belows commands to start this demo journey:
    ```bash
-   # git clone https://github.com/wanghongjuan/ocf-realsense-demos.gitt
+   # git clone https://github.com/wanghongjuan/ocf-realsense-demos.git
    # cd ocf-realsense-demos
    ```
    Please follow below guide to set up zjs ocf server environment at first, then you can enter directory "demo1" or "demo2", following the corresponding README file to launch the demo. 
@@ -50,6 +45,7 @@ The OCF server communicates with the OCF client or gateway over BLE through 6LoW
 
 ### Setup OCF Server Test Environment on Arduino 101
 1. Please follow this [instruction](https://github.com/01org/zephyr.js/blob/master/README.md#getting-started) to setup the environment on host and board Arduino 101(A101).
+* Tips: The ZJS OCF API has been extended to support multiple resource registrations with [this commit](https://github.com/01org/zephyr.js/commit/5d1674a724ba202bf966a4b2b66d50f80a0acb78), ZJS version 0.3 and below won't work with the script in folder ocf-server, you should either remain on the master branch or checkout the branch for version 0.4 or above once it’s available, we recommend you use the commit that is validation
 
 2. Please refer to this [guidance](./ocf-servers/README.md#setting-up-the-hw) to setup the sensors on this board
 

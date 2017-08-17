@@ -20,17 +20,15 @@ return new Promise((resolve, reject) => {
     console.log('-------' + resource.resourcePath);
       if(resource.resourcePath.indexOf('/a/rgbled') > -1 ||
         resource.resourcePath.indexOf('/a/buzzer') > -1){
-          if (resource.resourcePath in ledList) {
-          
-          } else {
+          if (!(resource.resourcePath in ledList)) {
             ledList[resource.resourcePath] = resource;
-            count++;
+            count++; 
           }
-        if (count == 2) {
-          setTimeout(() => {
-            resolve(ledList);
-          }, 2000);
-        }
+          if (count == 2) {
+            setTimeout(() => {
+              resolve(ledList);
+            }, 2000);
+          }
       } 
   })
   .findResources()

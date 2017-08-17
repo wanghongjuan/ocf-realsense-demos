@@ -14,7 +14,7 @@ $ npm install
 $ node main.js
 ```
 
-Note: Open a brower in any remote machine that is on the same network as target, enter url "TargetIPaddr:8000/view.html". Ex:10.30.90.130:8000/view.html
+Note: Open a brower in any remote machine that is on the same network as target, enter url "TargetIPaddr:8000/view.html". Ex:10.30.90.130:8000/view.html, it without network, please open url "127.0.0.1:8000/view.html".
 Person can be recognized and the recognition database can be stored when clicking the person to track him/her. The stored database can also be loaded.
 
 ## Screenshot
