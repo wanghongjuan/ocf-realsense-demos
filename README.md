@@ -13,52 +13,56 @@ The following demos are provided in this release.
 ## Get Start
 
 ### Hardware
-
-- PC with Ubuntu 16.04 which support BLE
-- [Arduino 101](https://store.arduino.cc/usa/arduino-101)
+- PC with Ubuntu 16.04
+- [MinnowBoard Turbot](https://store.netgate.com/Turbot2.aspx)
 - [Intel® RealSense™ Camera ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
 - [Grove Chainable RGB LED](http://www.seeedstudio.com/depot/twig-chainable-rgb-led-p-850.html?cPath=156_157)
 - [Grove Buzzer](http://wiki.seeed.cc/Grove-Buzzer/)
-- [Grove Base Shield](https://www.seeedstudio.com/Base-Shield-V2-p-1378.html) (optional)
-
 
 ### Setup RealSense Execution Environment on Ubuntu
 
-1. Please refer to this [tutorial](https://github.com/01org/node-realsense/blob/master/doc/setup_environment.md) for details introduction.
+1. Please refer to this [tutorial](https://github.com/01org/node-realsense/blob/master/doc/setup_environment.md) to set up RealSense test environment on Ubuntu.
 
-2. There are some dependencies(uuid-dev, libcure4-openssl-dev and a C++ compiler (gcc-5 or later) etc.) need to install at first, you can install them via command:
-   ```
-   # sudo apt-get install uuid-dev libcurl4-openssl-dev libboost-all-dev sqlite3 glib2.0-dev scons
-   ```
-3. Install [`iotivity-node`](https://github.com/otcshare/iotivity-node) via command `npm install iotivity-node@1.2.1-1`, for detail information, please refer to [here](https://github.com/otcshare/iotivity-node/blob/master/README.md).
-
-4. Establish a BLE Connection from Arduino 101 on host:
-The OCF server communicates with the OCF client or gateway over BLE through 6LoWPAN. Please reference this [document](https://github.com/01org/zephyr.js/blob/master/docs/6lowpan-ble.md#linux-setup) to build and run a ZJS IP application that uses 6LoWPAN as its IP transport.
-
-5. Execute belows commands to start this demo journey:
+2. Execute belows commands to start this demo journey:
    ```bash
    # git clone https://github.com/wanghongjuan/ocf-realsense-demos.git
    # cd ocf-realsense-demos
+   # export API_SERVER_HOST=<The-OCF-Server-board-ip>
    ```
-   Please follow below guide to set up zjs ocf server environment at first, then you can enter directory "demo1" or "demo2", following the corresponding README file to launch the demo. 
+   Please follow below guide to set up ocf server environment at first, then you can enter directory "demo1" or "demo2", following the corresponding README file to launch the demo. 
 
 
-### Setup OCF Server Test Environment on Arduino 101
-1. Please follow this [instruction](https://github.com/01org/zephyr.js/blob/master/README.md#getting-started) to setup the environment on host and board Arduino 101(A101).
-* Tips: The ZJS OCF API has been extended to support multiple resource registrations with [this commit](https://github.com/01org/zephyr.js/commit/5d1674a724ba202bf966a4b2b66d50f80a0acb78), ZJS version 0.3 and below won't work with the script in folder ocf-server, you should either remain on the master branch or checkout the branch for version 0.4 or above once it’s available, we recommend you use the commit that is validation
+### Setup OCF Server Test Environment on MinnowBoard Turbot
+1. Please follow this [instruction](https://minnowboard.org/tutorials/installing-ubuntu-16.04-on-minnowboardmax) to install Ubuntu 16.04 on MinnowBoard Turbot.
 
-2. Please refer to this [guidance](./ocf-servers/README.md#setting-up-the-hw) to setup the sensors on this board
+2. Install Node.js at first, v6.11.2 preferred(https://nodejs.org/en/download/package-manager/)
+3. There are some dependencies(uuid-dev, libcure4-openssl-dev and a C++ compiler (gcc-5 or later) etc.) need to install at first, you can install them via command:
+   ```bash
+   # sudo apt-get install uuid-dev libcurl4-openssl-dev libboost-all-dev sqlite3 libsqlite3-dev glib2.0-dev scons git
+   ```
+4. Install [`iot-rest-api-server`](https://github.com/01org/iot-rest-api-server) via command `npm install iot-rest-api-server`, for detail information, please refer to [here](https://github.com/01org/iot-rest-api-server/blob/master/README.md). Launch the rest api server:
+   ```bash
+   # cd node_modules/iot-rest-api-server
+   # node index.js &
+   ```
+5. The other dependence is `libmraa` that Low Level Skeleton Library for Communication on GNU/Linux platforms, you can install it via `npm install mraa`.
 
-3. Build and flash the ocf-servers/server.js image to A101 board with ZJS:
-```
-$ cd $ZJS_BASE
-~/zephyr.js $ make ROM=256 JS=<Path to ocf-servers>/servers.js
-```
-The `ROM=256` parameter in the above command instructs the linker to allocate 256KB for x86 as the default partition size is not sufficient. Reference the [Getting more space on your Arduino 101](https://github.com/01org/zephyr.js#getting-more-space-on-your-arduino-101) section in the ZJS project for more information.
+6. Please refer to this [guidance](./ocf-servers/README.md#setting-up-the-hw) to setup the sensors on this board
 
-Then connect the A101 to your development host with a USB A/B cable, press the onboard `Master Reset` button, and flash the A101 board with the following command in few seconds:
-```
-~/zephyr.js $ make dfu
-```
-
-After successfully flashing both ARC and x86 images to the Arduino 101 board, press the `Master Reset` button again to run the uploaded OCF server script.
+7. Copy the downloaded repo "ocf-realsense-demo/ocf-servers" from the host to this board, then execute below commands to launch all sensors server as administrator(user "root").
+   ```bash
+   # which node #Remember this node path
+   # pwd #Remember this ocf-servers path
+   # sudo -i
+   # export PATH=$PATH:[path-to-node]
+   # cd [path-to-ocf-servers]
+   # npm install
+   # export NODE_DEBUG=buzzer;node buzzer.js &
+   # export NODE_DEBUG=rgb_led;node rgb_led.js &
+   ```
+   Check these launched server resources whether can be found via iot-rest-api-server
+   ```bash
+   # cd <path-of-restapi-install>
+   # ./test/oic-get /res
+   ```
+   Then you can find the registered resource `/a/buzzer` and `/a/rgbled`.

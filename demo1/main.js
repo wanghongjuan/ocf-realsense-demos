@@ -10,10 +10,8 @@ let app = express();
 let server = require('http').createServer(app);
 let WsServer = require('ws').Server;
 let ptModule = require('node-person');
-let childProcess = require('child_process');
-let colors = require('colors');
-let updateResource = require('../client').updateResource;
-let getResource = require('../client').getResource;
+var childProcess = require('child_process');
+var colors = require('colors');
 
 let ptConfig = {tracking: {enable: true, trackingMode: 'following'}};
 let cameraConfig = {color: {width: 320, height: 240, frameRate: 30, isEnabled: true},
@@ -26,21 +24,30 @@ let led3LastChangeTime;
 let led4LastChangeTime;
 
 function initialLED() {
-  getResource().then((data) => {
-    ledList = data;
-    closeAllLED();
-  })
-  .catch((err) => {
-      console.log('Failed to get led id with error:' + err);
+  childProcess.execFile('./test/oic-get', ['/res'], function(err,stdout,stderr){
+    if(err) {
+      console.log('Failed to get led id with error:'+stderr);
+      closeAllLED();
       process.exit();
+    } else {
+      stdout = stdout.split('\n')[0];
+      var data = JSON.parse(stdout);
+      data.forEach(function (item){
+        if(item.links[0].href.indexOf('/a/rgbled') > -1 ||
+          item.links[0].href.indexOf('/a/buzzer') > -1){
+          ledList[item.links[0].href] = item.di;  
+        }
+      })
+      closeAllLED();
+    }
   });
 }
 
 function closeAllLED() {
-  updateResource(ledList['/a/rgbled'], [255, 255, 255]);
+  updateLedStatus('/a/rgbled', true, 'white');
   setTimeout(() => {
-    updateResource(ledList['/a/rgbled'], [0, 0, 0]);
-  }, 1000);
+    updateLedStatus('/a/rgbled', false, 'off');
+  }, 2000);
 }
 
 initialLED();
@@ -74,34 +81,42 @@ function controlLEDbyPersons(persons) {
   });
   if(ledFlgOld != 1 && led1Flg) {
     console.log(('update LED 1 with ' + led1Flg).blue.bold);
-    updateLedStatus('/a/rgbled', led1Flg, [0, 0, 255]); ledFlgOld = 1;
+    updateLedStatus('/a/rgbled', led1Flg, 'blue'); ledFlgOld = 1;
   }
   else if(ledFlgOld !== 2 && led2Flg) {
     console.log(('update LED 2 with ' + led2Flg).red.bold);
-    updateLedStatus('/a/rgbled', led2Flg, [255, 0, 0]); ledFlgOld = 2;
+    updateLedStatus('/a/rgbled', led2Flg, 'red'); ledFlgOld = 2;
   } 
   else if(ledFlgOld !== 3 && led3Flg) {
     console.log(('update LED 3 with ' + led3Flg).white.bold);
-    updateLedStatus('/a/rgbled', led3Flg, [255, 255, 255]); ledFlgOld = 3;
+    updateLedStatus('/a/rgbled', led3Flg, 'white'); ledFlgOld = 3;
   }
   else if(ledFlgOld !== 4 && led4Flg) {
     console.log(('update LED 4 with ' + led4Flg).green.bold);
-    updateLedStatus('/a/rgbled', led4Flg, [0, 255, 0]); ledFlgOld = 4;
+    updateLedStatus('/a/rgbled', led4Flg, 'green'); ledFlgOld = 4;
   }
   else if(!led1Flg && !led2Flg && !led3Flg && !led4Flg &&
           ledFlgOld != 0){
-    updateLedStatus('/a/rgbled', true, [0, 0, 0]); 
+    updateLedStatus('/a/rgbled', true, 'off'); 
     ledFlgOld = 0;
   }
 }
 
 function updateLedStatus(lid, state, color) {
-    let lightColor;
+    let serverFile, url;
     if(state) {
-        lightColor = color;
-        console.log('lightColor is: ' + lightColor);
-    } 
-    updateResource(ledList[lid], lightColor);
+      serverFile = ['./test/', color, '.json'].join('');
+    } else {
+      serverFile = ['./test/', color, '.json'].join('');
+    }
+    url = [lid, '?di=', ledList[lid]].join('');
+    //console.log(url);
+    console.log("./test/oic-post "+ url + " " + serverFile);
+    childProcess.execFile('./test/oic-post', [url, serverFile], function(err, stdout, stderr){
+      if(err) {
+        console.log('Failed to update led status with error: '+stderr);
+      }
+    })
 }
 
   ptModule.createPersonTracker(ptConfig, cameraConfig).then((instance) => {
@@ -388,4 +403,3 @@ function startServer() {
     });
   });
 }
-
