@@ -7,8 +7,10 @@ These samples illustrate how to develop applications using Intel® RealSense™ 
 
 ## Demos
 The following demos are provided in this release.
- - **Control light by distance**(demo1): This sample app illustrates the use of libRealsense, libPT, and the Linux SDK Framework to use the ZR300 camera's depth and color sensors to detect people in the scene. Detected person in the scene will be displayed with the distance information on screen. Meanwhile, the led light will be on and off according to the person's position changing.
- - **Control light/buzzer by person recognition**(demo2)：This sample app illustrates how to register new users to the database, upload the database to identify them when they appear in the scene. Recognized person in the scene will light a green led, otherwise light a red one and open buzzer.
+ - **Controling light by distance**(demo1): This sample app illustrates the use of libRealsense, libPT, and the Linux SDK Framework to use the ZR300 camera's depth and color sensors to detect people in the scene. Detected person in the scene will be displayed with the distance information on screen. Meanwhile, the led light will be on and off according to the person's position changing.
+ - **Controling light/buzzer by person recognition**(demo2)：This sample app illustrates how to register new users to the database, upload the database to identify them when they appear in the scene. Recognized person in the scene will light a green led, otherwise light a red one and open buzzer.
+ - **Controling fan turn on by gas density**: Transform fan status as density information of gas.
+ - **Presenting Temperture and Humidity statys on LCD Panel**.
 
 ## Get Start
 
@@ -20,6 +22,10 @@ The following demos are provided in this release.
 - [Grove Chainable RGB LED](http://www.seeedstudio.com/depot/twig-chainable-rgb-led-p-850.html?cPath=156_157)
 - [Grove Buzzer](http://wiki.seeed.cc/Grove-Buzzer/)
 - [Grove Base Shield](https://www.seeedstudio.com/Base-Shield-V2-p-1378.html) (optional)
+- [Grove Mini Fan](http://www.seeedstudio.com/wiki/Grove_-_Mini_Fan)
+- [Grove Gas Sensor(MQ2)](http://www.seeedstudio.com/depot/Grove-Gas-SensorMQ2-p-937.html)
+- [Grove Temperature & Humidity sensor](http://wiki.seeed.cc/Grove-TemptureAndHumidity_Sensor-High-Accuracy_AndMini-v1.0/)
+- [Grove LCD RGB panel](http://www.seeedstudio.com/wiki/Grove_-_LCD_RGB_Backlight)
 
 
 ### Setup RealSense Execution Environment on Ubuntu
